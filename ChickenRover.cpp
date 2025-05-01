@@ -1,5 +1,9 @@
-#include <IRremote.h>
+#include <IRremote.h> 
+//arduino libraries e-install
+//Angelo M. Morales
+//CHICKEN ROVER
 
+// Motor Pins
 const int IN1 = 13;
 const int IN2 = 12;
 const int IN3 = 11;
@@ -7,13 +11,21 @@ const int IN4 = 10;
 const int ENA = 5;
 const int ENB = 6;
 
+// Ultrasonic Sensor
 const int trigPin = 4;
 const int echoPin = 3;
+
+// IR Remote 
 const int IR_RECEIVE_PIN = 2;
 
+// LED Pin
+const int ledPin = 7;
+
+// IR Receiver Setup
 IRrecv irrecv(IR_RECEIVE_PIN);
 decode_results results;
 
+// Variables
 long duration;
 int distance;
 int motorSpeed = 80;
@@ -25,6 +37,16 @@ unsigned long lastMoveTime = 0;
 unsigned long moveDuration = 0;
 unsigned long pauseDuration = 0;
 
+// FUNCTIONS
+void moveForward();
+void moveBackward();
+void turnLeft();
+void turnRight();
+void stopMovement();
+void rampMotors();
+long measureDistance();
+void performRandomMovement();
+
 void setup() {
   pinMode(IN1, OUTPUT);
   pinMode(IN2, OUTPUT);
@@ -32,9 +54,11 @@ void setup() {
   pinMode(IN4, OUTPUT);
   pinMode(ENA, OUTPUT);
   pinMode(ENB, OUTPUT);
-
+  
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
+
+  pinMode(ledPin, OUTPUT); 
 
   irrecv.enableIRIn();
   Serial.begin(9600);
@@ -46,10 +70,13 @@ void loop() {
     long int decCode = results.value;
     Serial.println(decCode);
 
-    if (decCode == 0xFFA25D) {  // POWER button toggles mode
+    if (decCode == 0xFFA25D) {  // CH- button 
       isChickenMode = !isChickenMode;
       stopMovement();
-      Serial.println(isChickenMode ? "🐔 Chicken Mode Activated" : "👤 Manual Mode Activated");
+
+      digitalWrite(ledPin, isChickenMode ? HIGH : LOW); // LED ON chicken mode
+
+      Serial.println(isChickenMode ? "Chicken Mode Activated" : "Manual Mode Activated");
       delay(500);
     }
 
@@ -57,7 +84,7 @@ void loop() {
       switch (decCode) {
         case 0xFF629D: moveForward(); break;     // Forward
         case 0xFFC23D: turnLeft(); break;        // Left
-        case 0xFF02FD: stopMovement(); break;    // OK / Stop
+        case 0xFF02FD: stopMovement(); break;    // Stop
         case 0xFF22DD: turnRight(); break;       // Right
         case 0xFFA857: moveBackward(); break;    // Backward
         default: break;
@@ -70,13 +97,11 @@ void loop() {
   distance = measureDistance();
 
   if (isChickenMode) {
-    // 🐔 Chicken reacts naturally — no backward motion
     if (distance < 15) {
-      Serial.println("🐔 Obstacle detected! Changing direction...");
+      Serial.println("Obstacle detected");
       stopMovement();
       delay(200);
 
-      // Turn left or right randomly
       if (random(0, 2) == 0) {
         turnLeft();
       } else {
@@ -85,7 +110,7 @@ void loop() {
 
       delay(300);
       moveForward();
-      delay(400); // move forward a bit after turning
+      delay(400);
       stopMovement();
     }
 
@@ -106,9 +131,8 @@ void loop() {
     }
 
   } else {
-    // 👤 Manual mode obstacle avoidance (only forward blocked)
     if (distance < 15 && isMovingForward) {
-      Serial.println("⚠️ Obstacle detected in manual mode!");
+      Serial.println("Obstacle detected");
       stopMovement();
       delay(200);
       moveBackward();
@@ -118,14 +142,7 @@ void loop() {
   }
 }
 
-void performRandomMovement() {
-  int randAction = random(0, 3);  // 0 to 2: forward, left, right
-  switch (randAction) {
-    case 0: moveForward(); break;
-    case 1: turnLeft(); break;
-    case 2: turnRight(); break;
-  }
-}
+// ------------------------Movement Functions------------------------//
 
 void moveForward() {
   digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW);
@@ -143,20 +160,18 @@ void moveBackward() {
   Serial.println("Moving backward");
 }
 
-// 🌀 Turn left using right wheel only
 void turnLeft() {
-  digitalWrite(IN1, LOW); digitalWrite(IN2, LOW);  // left wheel stop
-  digitalWrite(IN3, HIGH); digitalWrite(IN4, LOW); // right wheel forward
+  digitalWrite(IN1, LOW); digitalWrite(IN2, LOW);
+  digitalWrite(IN3, HIGH); digitalWrite(IN4, LOW);
   rampMotors();
   delay(300);
   stopMovement();
   Serial.println("Turning left");
 }
 
-// 🌀 Turn right using left wheel only
 void turnRight() {
-  digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW); // left wheel forward
-  digitalWrite(IN3, LOW); digitalWrite(IN4, LOW);  // right wheel stop
+  digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW); digitalWrite(IN4, LOW);
   rampMotors();
   delay(300);
   stopMovement();
@@ -186,4 +201,13 @@ long measureDistance() {
   digitalWrite(trigPin, LOW);
   duration = pulseIn(echoPin, HIGH);
   return (duration / 2) / 29.1;
+}
+
+void performRandomMovement() {
+  int randAction = random(0, 3);  //CHICKEN MODE MOVEMENT RNG
+  switch (randAction) {
+    case 0: moveForward(); break;
+    case 1: turnLeft(); break;
+    case 2: turnRight(); break;
+  }
 }
