@@ -95,11 +95,11 @@ void loop() {
 
     if (!isChickenMode) {
       switch (decCode) {
-        case 0xFF629D: moveForward(); break;     // this Forward  (CH)
+        case 0xFFA857: moveForward(); break;     // this Forward  (CH)
         case 0xFFC23D: turnLeft(); break;        // this Left     (|<<)
         case 0xFF02FD: stopMovement(); break;    // this Stop     (>>|)
         case 0xFF22DD: turnRight(); break;       // this Right    (>||)
-        case 0xFFA857: moveBackward(); break;    // this Backward (+)
+        case 0xFF629D: moveBackward(); break;    // this Backward (+)
         default: break;
       }
     }
