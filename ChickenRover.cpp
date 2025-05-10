@@ -11,8 +11,8 @@ const int IN1 = 13;
 const int IN2 = 12;
 const int IN3 = 11;
 const int IN4 = 10;
-const int ENA = 5;
-const int ENB = 6;
+const int ENA = 8;
+const int ENB = 9;
 
 // Ultrasonic Sensor
 const int trigPin = 4;
@@ -23,6 +23,7 @@ const int IR_RECEIVE_PIN = 2;
 
 // LED Pin
 const int ledPin = 7;
+const int ledPin2 = 6;  // LED2
 
 // IR Receiver Setup
 IRrecv irrecv(IR_RECEIVE_PIN);
@@ -40,6 +41,12 @@ unsigned long lastMoveTime = 0;
 unsigned long moveDuration = 0;
 unsigned long pauseDuration = 0;
 
+// Escape Routine variables
+unsigned long lastObstacleTime = 0;
+int obstacleCount = 0;
+const int escapeThreshold = 3;          // # of hits before escape
+const unsigned long obstacleWindow = 3000;  // 3 seconds window
+
 // FUNCTIONS
 void moveForward();
 void moveBackward();
@@ -49,6 +56,7 @@ void stopMovement();
 void rampMotors();
 long measureDistance();
 void performRandomMovement();
+void escapeRoutine();
 
 void setup() {
   pinMode(IN1, OUTPUT);
@@ -62,6 +70,7 @@ void setup() {
   pinMode(echoPin, INPUT);
 
   pinMode(ledPin, OUTPUT); 
+  pinMode(ledPin2, OUTPUT); // LED2
 
   irrecv.enableIRIn();
   Serial.begin(9600);
@@ -77,7 +86,8 @@ void loop() {
       isChickenMode = !isChickenMode;
       stopMovement();
 
-      digitalWrite(ledPin, isChickenMode ? HIGH : LOW); // LED ON chicken mode
+      digitalWrite(ledPin, isChickenMode ? HIGH : LOW);   // LED ON chicken mode
+      digitalWrite(ledPin2, isChickenMode ? LOW : HIGH);  // LED2 ON manual mode
 
       Serial.println(isChickenMode ? "Chicken Mode Activated" : "Manual Mode Activated");
       delay(500);
@@ -105,16 +115,34 @@ void loop() {
       stopMovement();
       delay(200);
 
-      if (random(0, 2) == 0) {
-        turnLeft();
-      } else {
-        turnRight();
-      }
+      unsigned long now = millis();
 
-      delay(300);
-      moveForward();
-      delay(400);
-      stopMovement();
+      // Update obstacle count
+      if (now - lastObstacleTime <= obstacleWindow) {
+        obstacleCount++;
+      } else {
+        obstacleCount = 1;
+      }
+      lastObstacleTime = now;
+
+      // ESCAPE ROUTINE if stuck
+      if (obstacleCount >= escapeThreshold) {
+        Serial.println("Stuck detected! Escaping...");
+        escapeRoutine();
+        obstacleCount = 0;  // reset after escape
+      } else {
+        // normal random avoidance
+        if (random(0, 2) == 0) {
+          turnLeft();
+        } else {
+          turnRight();
+        }
+
+        delay(300);
+        moveForward();
+        delay(400);
+        stopMovement();
+      }
     }
 
     unsigned long currentTime = millis();
@@ -213,4 +241,22 @@ void performRandomMovement() {
     case 1: turnLeft(); break;
     case 2: turnRight(); break;
   }
+}
+
+// ------------------------Escape Routine------------------------//
+
+void escapeRoutine() {
+  moveBackward();
+  delay(600);
+  stopMovement();
+  delay(200);
+  
+  if (random(0, 2) == 0) {
+    turnLeft();
+    delay(500);
+  } else {
+    turnRight();
+    delay(500);
+  }
+  stopMovement();
 }
