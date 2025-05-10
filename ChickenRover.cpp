@@ -1,7 +1,10 @@
 #include <IRremote.h> 
 //arduino libraries e-install
+//IRremote by shirriff, z3t0 (v 2.6.0)
 //Angelo M. Morales
 //CHICKEN ROVER
+
+//comments-extpected result
 
 // Motor Pins
 const int IN1 = 13;
@@ -70,7 +73,7 @@ void loop() {
     long int decCode = results.value;
     Serial.println(decCode);
 
-    if (decCode == 0xFFA25D) {  // CH- button 
+    if (decCode == 0xFFA25D) {  // cHICKEN MODE (CH-) toggle button 
       isChickenMode = !isChickenMode;
       stopMovement();
 
@@ -82,11 +85,11 @@ void loop() {
 
     if (!isChickenMode) {
       switch (decCode) {
-        case 0xFF629D: moveForward(); break;     // Forward
-        case 0xFFC23D: turnLeft(); break;        // Left
-        case 0xFF02FD: stopMovement(); break;    // Stop
-        case 0xFF22DD: turnRight(); break;       // Right
-        case 0xFFA857: moveBackward(); break;    // Backward
+        case 0xFF629D: moveForward(); break;     // this Forward  (CH)
+        case 0xFFC23D: turnLeft(); break;        // this Left     (|<<)
+        case 0xFF02FD: stopMovement(); break;    // this Stop     (>>|)
+        case 0xFF22DD: turnRight(); break;       // this Right    (>||)
+        case 0xFFA857: moveBackward(); break;    // this Backward (+)
         default: break;
       }
     }
